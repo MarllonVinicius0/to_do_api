@@ -84,5 +84,40 @@ def create_tarefa():
         logging.error(f"Erro interno: {e}") # Registra o erro no log
         return jsonify({"erro": "Erro interno do servidor"}), 500 # Retorna um erro 500 (Erro interno do servidor)
 
+@app.route('/tarefas/<int:tarefa_id>/status', methods=['PATCH'])
+def atualizar_status(tarefa_id):
+    if not request.is_json:
+        return jsonify({"error": "Formato de requisição inválido"}), 415 # Verifica se o formato da requisição é JSON
+    
+    dados = request.get_json(silent=True)
+    if dados is None:
+        return jsonify({"error": "Corpo da requisição ausente ou inválido"}), 400 # Verifica se o corpo da requisição está vazio ou inválido
+    
+    novo_status = dados.get("status")
+
+    if novo_status not in ["pendente", "concluido"]:
+        return jsonify({"error": "Status inválido Use 'pendente' ou 'concluido'"}), 400
+    
+    tarefas = ler_tarefas() # Lê as tarefas do arquivo JSON
+    tarefa = next((t for t in tarefas if t["id"] == tarefa_id), None)
+
+    if not tarefa:
+        return jsonify({"error": f"Tarefa com ID {tarefa_id} não encontrada"}), 404
+    
+    if tarefa["status"] == novo_status:
+        return jsonify({"error": f"Tarefa já está com status '{novo_status}'"}), 409 # Verifica se a tarefa já está com o status desejado
+    
+    tarefa["status"] = novo_status
+
+    if novo_status == "concluido":
+        tarefa["dataConclusao"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    else:
+        tarefa["dataConclusao"] = None
+
+    salvar_tarefas(tarefas)
+
+    return jsonify(tarefa), 200 # Retorna a tarefa atualizada com status 200 (OK)
+
+
 if __name__ == "__main__": # Executa o aplicativo Flask
     app.run(debug=True) # Ativa o modo de depuração para facilitar o desenvolvimento
