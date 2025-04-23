@@ -1,1 +1,23 @@
-[]
+[
+    {
+        "id": 1,
+        "descricao": "Comprar mantimentos",
+        "status": "pendente",
+        "dataCriacao": "2023-10-01",
+        "dataConclusao": null
+    },
+    {
+        "id": 2,
+        "descricao": "Estudar programação",
+        "status": "pendente",
+        "dataCriacao": "2023-10-01",
+        "dataConclusao": null
+    },
+    {
+        "id": 3,
+        "descricao": "Fazer exercícios",
+        "status": "concluido",
+        "dataCriacao": "2023-09-30",
+        "dataConclusao": "2023-09-30"
+    }
+]
