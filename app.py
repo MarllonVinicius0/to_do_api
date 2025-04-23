@@ -1,4 +1,5 @@
-from flask import Flask, jsonify 
+from flask import Flask, jsonify , request 
+from datetime import datetime
 import json
 import os
 
@@ -22,6 +23,31 @@ def listar_tarefas():
     tarefas = ler_tarefas()
     return jsonify(tarefas), 200
 
+# Função auxiliar para salvar tarefas no arquivo JSON
+def salvar_tarefas(tarefas):
+    with open('tarefas.json', 'w', encoding='utf-8') as f:
+        json.dump(tarefas, f, ensure_ascii=False, indent=4)
+
+# Endpoint para criar uma nova tarefa
+@app.route('/tarefas', methods=['POST'])
+def create_tarefa():
+    dados = request.get_json()
+    if not dados or 'descricao' not in dados:
+        return jsonify({"erro": "A descrição da tarefa é obrigatória"}), 400
+
+    tarefas = ler_tarefas()
+    novo_id = max([tarefa['id'] for tarefa in tarefas], default=0) + 1
+    nova_tarefa = {
+        "id": novo_id,
+        "descricao": dados['descricao'],
+        "status": "pendente",
+        "dataCriacao": datetime.now().strftime('%d/%m;%Y %H:%M:%S'),
+        "dataConclusao": None
+    }
+    tarefas.append(nova_tarefa)
+    salvar_tarefas(tarefas)
+
+    return jsonify(nova_tarefa), 201
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -3,21 +3,28 @@
         "id": 1,
         "descricao": "Comprar mantimentos",
         "status": "pendente",
-        "dataCriacao": "2023-10-01",
+        "dataCriacao": "01/10/2023",
         "dataConclusao": null
     },
     {
         "id": 2,
         "descricao": "Estudar programação",
         "status": "pendente",
-        "dataCriacao": "2023-10-01",
+        "dataCriacao": "01/10/2023",
         "dataConclusao": null
     },
     {
         "id": 3,
         "descricao": "Fazer exercícios",
         "status": "concluido",
-        "dataCriacao": "2023-09-30",
-        "dataConclusao": "2023-09-30"
+        "dataCriacao": "30/09/2023",
+        "dataConclusao": "30/09/2023"
+    },
+    {
+        "id": 4,
+        "descricao": "Ler um livro",
+        "status": "pendente",
+        "dataCriacao": "22/04;2025 21:50:22",
+        "dataConclusao": null
     }
 ]
