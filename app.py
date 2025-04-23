@@ -31,23 +31,35 @@ def salvar_tarefas(tarefas):
 # Endpoint para criar uma nova tarefa
 @app.route('/tarefas', methods=['POST'])
 def create_tarefa():
-    dados = request.get_json()
-    if not dados or 'descricao' not in dados:
-        return jsonify({"erro": "A descrição da tarefa é obrigatória"}), 400
+    try:
+        dados = request.get_json()
 
-    tarefas = ler_tarefas()
-    novo_id = max([tarefa['id'] for tarefa in tarefas], default=0) + 1
-    nova_tarefa = {
-        "id": novo_id,
-        "descricao": dados['descricao'],
-        "status": "pendente",
-        "dataCriacao": datetime.now().strftime('%d/%m;%Y %H:%M:%S'),
-        "dataConclusao": None
-    }
-    tarefas.append(nova_tarefa)
-    salvar_tarefas(tarefas)
+        if not dados:
+            return jsonify({"error": "Corpo da requisição ausente ou inválido"}), 400 # Verifica se o corpo da requisição está vazio ou inválido
+        
+        descricao = dados.get("descricao","").strip()
 
-    return jsonify(nova_tarefa), 201
+        if not descricao:
+            return jsonify({"error": "Descrição da tarefa é obrigatória"}), 400 # Verifica se a descrição da tarefa está vazia
+        
+        tarefas = ler_tarefas()
+        novo_id = max([tarefa['id'] for tarefa in tarefas], default=0) + 1
+
+        nova_tarefa = {
+            "id": novo_id,
+            "descricao": descricao,
+            "status": "pendente",
+            "data_criacao": datetime.now().strftime("%d/%m;%Y %H:%M:%S"),
+            "dataConclusao": None
+        }
+
+        tarefas.append(nova_tarefa)
+        salvar_tarefas(tarefas)
+
+        return jsonify(nova_tarefa), 201
+    
+    except Exception as e:
+        return jsonify({"error": "Erro interno do servidor", "detalhes" : str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
