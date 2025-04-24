@@ -21,6 +21,17 @@ class TarefaController:
     def listar_tarefas():
         tarefas = TarefaController.ler_tarefas()
         return jsonify(tarefas), 200
+    
+    @staticmethod
+    def validar_data_conclusao(data_conclusao, data_criacao):
+        try:
+            data_conclusao = datetime.strptime(data_conclusao, "%d/%m/%Y %H:%M:%S")
+            data_criacao = datetime.strptime(data_criacao, "%d/%m/%Y %H:%M:%S")
+            if data_conclusao <= data_criacao:
+                return False
+            return True
+        except ValueError:
+            return False
 
     @staticmethod
     def criar_tarefa(dados):
@@ -38,13 +49,26 @@ class TarefaController:
         if not descricao:
             return {"error": "Descrição da tarefa é obrigatória"}, 400
         
+        status = dados.get("status","pendente").strip().lower()
+        if status not in ["pendente", "concluido","em andamento"]:
+            return {"error": "Status inválido. Use 'pendente', 'em andamento' ou 'concluido'"}, 400
+
+
         dataconclusao = dados.get("dataConclusao")
+        data_criacao = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+        if status == "concluido" and not dataconclusao:
+            return {"error": "Data de conclusão é obrigatória para status 'concluido'"}, 400 # Se o status for 'concluido', a dataConclusao deve ser fornecida
+        
         if dataconclusao:
             try:
                 datetime.strptime(dataconclusao, "%d/%m/%Y %H:%M:%S")
             except ValueError:
                 return {"error": "Formato de data de conclusão inválido. Use 'dd/mm/aaaa hh:mm:ss'"}, 400
-        
+            
+             # Se o status for 'pendente' ou 'em andamento', a dataConclusao deve ser posterior à dataCriacao
+            if status in ["pendente", "em andamento"] and not TarefaController.validar_data_conclusao(dataconclusao, data_criacao):
+                return {"error": "Data de conclusão deve ser posterior à data de criação"}, 400
 
         tarefas = TarefaController.ler_tarefas()
         if any(tarefa["descricao"] == descricao for tarefa in tarefas):
@@ -55,8 +79,8 @@ class TarefaController:
         nova_tarefa = {
             "id": novo_id,
             "descricao": descricao,
-            "status": "pendente",
-            "data_Criacao": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            "status": status,
+            "dataCriacao": data_criacao,
             "dataConclusao": dataconclusao
         }
         tarefas.append(nova_tarefa)
