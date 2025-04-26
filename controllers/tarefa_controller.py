@@ -2,25 +2,30 @@
 from datetime import datetime
 import json
 import os
-from flask import jsonify
+from database import get_db_connection  # Importa a função de conexão com o banco de dados
+from flask import jsonify  # Importa jsonify para retornar respostas JSON
+from bson import ObjectId  # Importa ObjectId para manipulação de IDs do MongoDB
+
 
 class TarefaController:
     @staticmethod
+    def serializar_tarefa(tarefa):
+        # Serializa a tarefa para JSON, convertendo ObjectId para string
+        tarefa["_id"] = str(tarefa["_id"])
+        return tarefa
+
+    @staticmethod
     def ler_tarefas():
-        if os.path.exists('tarefas.json'):
-            with open('tarefas.json', 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return []
+        tarefas_collection = get_db_connection()  # Obtém a coleção de tarefas do banco de dados
+        tarefas = tarefas_collection.find()  # Busca todas as tarefas na coleção
+        tarefas_serializadas = [TarefaController.serializar_tarefa(tarefa) for tarefa in tarefas]  # Serializa cada tarefa
+        return tarefas_serializadas  # Retorna a lista de tarefas serializadas
 
     @staticmethod
     def salvar_tarefas(tarefas):
-        with open('tarefas.json', 'w', encoding='utf-8') as f:
-            json.dump(tarefas, f, ensure_ascii=False, indent=4)
-
-    @staticmethod
-    def listar_tarefas():
-        tarefas = TarefaController.ler_tarefas()
-        return jsonify(tarefas), 200
+        tarefas_collection = get_db_connection()
+        for tarefa in tarefas:
+            tarefas_collection.insert_one(tarefa)  # Insere cada tarefa na coleção
     
     @staticmethod
     def validar_data_conclusao(data_conclusao, data_criacao):
@@ -70,40 +75,52 @@ class TarefaController:
             if status in ["pendente", "em andamento"] and not TarefaController.validar_data_conclusao(dataconclusao, data_criacao):
                 return {"error": "Data de conclusão deve ser posterior à data de criação"}, 400
 
-        tarefas = TarefaController.ler_tarefas()
-        if any(tarefa["descricao"] == descricao for tarefa in tarefas):
+        tarefas_collection = get_db_connection()
+        if any(tarefa["descricao"] == descricao for tarefa in tarefas_collection.find()):
             return {"error": "Já existe uma tarefa com essa descrição"}, 409
 
         # Lógica de criação
-        novo_id = max([tarefa['id'] for tarefa in tarefas], default=0) + 1
+
         nova_tarefa = {
-            "id": novo_id,
             "descricao": descricao,
             "status": status,
             "dataCriacao": data_criacao,
             "dataConclusao": dataconclusao
         }
-        tarefas.append(nova_tarefa)
-        TarefaController.salvar_tarefas(tarefas)
         
-        return nova_tarefa, 201
+        resultado = tarefas_collection.insert_one(nova_tarefa) # Insere a nova tarefa na coleção
+
+        nova_tarefa["_id"] = str(resultado.inserted_id)  # Adiciona o ID gerado pelo MongoDB à nova tarefa
+        
+        return TarefaController.serializar_tarefa(nova_tarefa), 201  # Retorna a tarefa criada com status 201 (Criado)
 
     @staticmethod
-    def atualizar_status(tarefa_id, novo_status):
-        tarefas = TarefaController.ler_tarefas()
-        tarefa = next((t for t in tarefas if t["id"] == tarefa_id), None)
+    def atualizar_status(_id, novo_status):
+        if novo_status not in ["pendente", "concluido", "em andamento"]:
+            return {"error": "Status inválido. Use 'pendente', 'em andamento' ou 'concluido'"}, 400
         
+        tarefas_collection = get_db_connection()
+        
+        tarefa = tarefas_collection.find_one({"_id": ObjectId(_id)})  # Converter _id para ObjectId
+
         if not tarefa:
-            return {"error": f"Tarefa com ID {tarefa_id} não encontrada"}, 404
-        
-        if novo_status not in ["pendente", "concluido"]:
-            return {"error": "Status inválido. Use 'pendente' ou 'concluido'"}, 400
+            return {"error": "Tarefa não encontrada"}, 404
         
         if tarefa["status"] == novo_status:
-            return {"error": f"Tarefa já está com status '{novo_status}'"}, 409
+            return {"error": "Status já está definido como o valor fornecido"}, 200
         
-        tarefa["status"] = novo_status
-        tarefa["dataConclusao"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S") if novo_status == "concluido" else None
-        TarefaController.salvar_tarefas(tarefas)
+        tarefas_collection.update_one({"_id": ObjectId(_id)}, {"$set": {"status": novo_status}})  # Atualiza o status da tarefa
         
-        return tarefa, 200
+        if novo_status == "concluido":
+            tarefas_collection.update_one({"_id": ObjectId(_id)}, {"$set": {"dataConclusao": datetime.now().strftime("%d/%m/%Y %H:%M:%S")}})
+        if novo_status == "pendente":
+            tarefas_collection.update_one({"_id": ObjectId(_id)}, {"$set": {"dataConclusao": None}})
+
+        if novo_status == "em andamento":
+            tarefas_collection.update_one({"_id": ObjectId(_id)}, {"$set": {"dataConclusao": None}})
+
+        tarefa_atualizada = tarefas_collection.find_one({"_id": ObjectId(_id)})
+        
+        return TarefaController.serializar_tarefa(tarefa_atualizada), 200
+    
+        
