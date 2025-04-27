@@ -165,3 +165,14 @@ class TarefaController:
         tarefa_atualizada = tarefas_collection.find_one({"_id": ObjectId(_id)})
 
         return TarefaController.serializar_tarefa(tarefa_atualizada), 200
+
+    @staticmethod
+    def remover_tarefa(_id):
+        tarefas_collection = get_db_connection()
+
+        tarefa = tarefas_collection.find_one({"_id": ObjectId(_id)})  # Converter _id para ObjectId
+        if not tarefa:
+            return {"error": "Tarefa não encontrada"}, 404
+
+        tarefas_collection.delete_one({"_id": ObjectId(_id)})  # Deleta a tarefa da coleção
+        return {"message": f"Tarefa {tarefa} deletada com sucesso"}, 200  # Retorna mensagem de sucesso com status 200 (OK)

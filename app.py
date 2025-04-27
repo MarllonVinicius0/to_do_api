@@ -68,6 +68,13 @@ def atualizar_tarefa(_id):
     response, status_code = TarefaController.atualizar_tarefa(_id, descricao, status, data_conclusao)  # Chama o método para atualizar a tarefa
     return jsonify(response), status_code
 
+@app.route('/tarefas/<string:_id>', methods=['DELETE'])
+def remover_tarefa(_id):
+    try:
+        response, status_code = TarefaController.remover_tarefa(_id) # Chama o método para remover a tarefa
+        return jsonify(response), status_code  # Retorna a resposta e o código de status
+    except Exception as e:
+        return jsonify({"error": f"Erro ao remover tarefa: {str(e)}"}), 500
     
 if __name__ == "__main__":
     app.run(debug=True)  # Executa a aplicação em modo de depuração
