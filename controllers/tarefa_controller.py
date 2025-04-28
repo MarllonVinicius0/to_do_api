@@ -5,6 +5,7 @@ import os
 from database import get_db_connection  # Importa a função de conexão com o banco de dados
 from flask import jsonify  # Importa jsonify para retornar respostas JSON
 from bson import ObjectId  # Importa ObjectId para manipulação de IDs do MongoDB
+import pytz
 
 
 class TarefaController:
@@ -59,7 +60,7 @@ class TarefaController:
             return {"error": "Status inválido. Use 'pendente', 'em andamento' ou 'concluido'"}, 400
 
         dataconclusao = dados.get("dataConclusao")
-        data_criacao = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        data_criacao = datetime.now(pytz.timezone('America/Sao_Paulo')).strftime("%d/%m/%Y %H:%M:%S")  # Obtém a data atual no formato desejado
 
         if status == "concluido" and not dataconclusao:
             return {"error": "Data de conclusão é obrigatória para status 'concluido'"}, 400  # Se o status for 'concluido', a dataConclusao deve ser fornecida
