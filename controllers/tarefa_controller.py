@@ -116,7 +116,7 @@ class TarefaController:
             updates["status"] = status
 
             if status == "concluido":
-                updates["dataConclusao"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                updates["dataConclusao"] = datetime.now(pytz.timezone('America/Sao_Paulo')).strftime("%d/%m/%Y %H:%M:%S")  # Atualiza a data de conclusão para a data atual
                             
                             
                 
